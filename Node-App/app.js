@@ -21,9 +21,27 @@ if (!fs.existsSync(dataDir)) {
 const fetchAndSaveData = async () => {
     try {
         console.log('Fetching data...');
-        const response = await axios.get(url);
-        fs.writeFileSync(filePath, JSON.stringify(response.data, null, 2));
-        console.log('Data successfully fetched and saved to crime_data.json');
+        const response = await axios({
+            method: 'get',
+            url: url,
+            responseType: 'stream' // Stream the response
+        });
+
+        // Create a writable stream to the file
+        const writer = fs.createWriteStream(filePath);
+
+        // Pipe the response data to the file
+        response.data.pipe(writer);
+
+        // Handle the finish event
+        writer.on('finish', () => {
+            console.log('Data successfully fetched and saved to crime_data.json');
+        });
+
+        // Handle errors during writing
+        writer.on('error', (err) => {
+            console.error('Error writing data to file:', err);
+        });
     } catch (error) {
         console.error('Error fetching data:', error);
     }
